@@ -6,8 +6,8 @@ buildscript {
     }
 
     dependencies {
-        // Using Android Gradle Plugin 8.1.4 - compatible with Android Studio Hedgehog+
-        classpath 'com.android.tools.build:gradle:8.1.4'
+        // Using Android Gradle Plugin 8.2.2 - compatible with Java 21 and Android SDK 36
+        classpath 'com.android.tools.build:gradle:8.2.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }

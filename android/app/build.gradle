@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.moneymoney.app"
-    compileSdk 34
+    compileSdk 36
     ndkVersion "25.1.8937393"
 
     compileOptions {
@@ -44,7 +44,7 @@ android {
         applicationId "com.moneymoney.app"
         // Minimum SDK 21 for modern Android features
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
