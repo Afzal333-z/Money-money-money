@@ -17,10 +17,15 @@ class StorageService {
   }
 
   static List<Transaction> getTransactions() {
-    final jsonString = _prefs?.getString('transactions');
-    if (jsonString == null) return [];
-    final json = jsonDecode(jsonString) as List;
-    return json.map((j) => Transaction.fromJson(j)).toList();
+    try {
+      final jsonString = _prefs?.getString('transactions');
+      if (jsonString == null) return [];
+      final json = jsonDecode(jsonString) as List;
+      return json.map((j) => Transaction.fromJson(j)).toList();
+    } catch (e) {
+      print('Error loading transactions: $e');
+      return [];
+    }
   }
 
   // Savings Data
@@ -29,8 +34,22 @@ class StorageService {
   }
 
   static SavingsData getSavingsData() {
-    final jsonString = _prefs?.getString('savings_data');
-    if (jsonString == null) {
+    try {
+      final jsonString = _prefs?.getString('savings_data');
+      if (jsonString == null) {
+        return SavingsData(
+          totalSavings: 0.0,
+          monthlyBudget: 0.0,
+          monthlySpent: 0.0,
+          streakDays: 0,
+          lastVisitDate: DateTime.now(),
+          achievements: [],
+        );
+      }
+      final json = jsonDecode(jsonString);
+      return SavingsData.fromJson(json);
+    } catch (e) {
+      print('Error loading savings data: $e');
       return SavingsData(
         totalSavings: 0.0,
         monthlyBudget: 0.0,
@@ -40,8 +59,6 @@ class StorageService {
         achievements: [],
       );
     }
-    final json = jsonDecode(jsonString);
-    return SavingsData.fromJson(json);
   }
 
   // Update streak
@@ -49,24 +66,27 @@ class StorageService {
     final data = getSavingsData();
     final now = DateTime.now();
     final lastVisit = data.lastVisitDate;
-    
+
+    // Normalize dates to midnight for accurate comparison
+    final today = DateTime(now.year, now.month, now.day);
+    final lastVisitDate = DateTime(lastVisit.year, lastVisit.month, lastVisit.day);
+
+    // Calculate difference in days
+    final daysDifference = today.difference(lastVisitDate).inDays;
+
     int newStreak = data.streakDays;
-    
-    if (lastVisit.year == now.year && 
-        lastVisit.month == now.month && 
-        lastVisit.day == now.day) {
+
+    if (daysDifference == 0) {
       // Already visited today
       return newStreak;
-    } else if (lastVisit.year == now.year && 
-               lastVisit.month == now.month && 
-               lastVisit.day == now.day - 1) {
-      // Consecutive day
+    } else if (daysDifference == 1) {
+      // Consecutive day - increase streak
       newStreak += 1;
-    } else {
-      // Streak broken
+    } else if (daysDifference > 1) {
+      // Streak broken - reset to 1
       newStreak = 1;
     }
-    
+
     final updatedData = data.copyWith(
       streakDays: newStreak,
       lastVisitDate: now,

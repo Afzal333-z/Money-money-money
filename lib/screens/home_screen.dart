@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../models/savings_data.dart';
@@ -14,15 +15,42 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late SavingsData _savingsData;
   List<Transaction> _transactions = [];
+  bool _showTreeTip = true;
+  late AnimationController _tipController;
+  late Animation<double> _tipAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _updateStreak();
+
+    _tipController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _tipAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
+      CurvedAnimation(parent: _tipController, curve: Curves.easeInOut),
+    );
+
+    // Hide tip after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showTreeTip = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tipController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -36,6 +64,61 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _updateStreak() async {
     await StorageService.updateStreak();
     _loadData();
+  }
+
+  String _getMotivationalMessage(double health) {
+    if (health >= 0.9) {
+      return '🌟 Amazing! Your tree is thriving!';
+    } else if (health >= 0.7) {
+      return '🌳 Great job! Keep growing!';
+    } else if (health >= 0.5) {
+      return '🌱 Good progress! Almost there!';
+    } else if (health >= 0.3) {
+      return '💪 Stay strong! Every bit counts!';
+    } else if (health > 0) {
+      return '🌿 Small steps lead to big growth!';
+    } else {
+      return '🌱 Plant your first seed by saving money!';
+    }
+  }
+
+  String _getTreeHealthText(double health) {
+    if (health >= 0.9) {
+      return 'Excellent';
+    } else if (health >= 0.7) {
+      return 'Healthy';
+    } else if (health >= 0.5) {
+      return 'Growing';
+    } else if (health >= 0.3) {
+      return 'Needs Care';
+    } else if (health > 0) {
+      return 'Struggling';
+    } else {
+      return 'Not Started';
+    }
+  }
+
+  Color _getHealthColor(double health) {
+    if (health >= 0.7) {
+      return Colors.green;
+    } else if (health >= 0.4) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  void _onTreeTapped() {
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('✨ You tapped the tree! Keep saving to see it grow! 🌳'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -92,7 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Tree Section
                 SliverToBoxAdapter(
                   child: Container(
-                    height: 450,
                     margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -114,14 +196,136 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Column(
                       children: [
-                        const SizedBox(height: 20),
-                        // Tree
-                        Expanded(
-                          child: Center(
-                            child: MoneyTree(
-                              health: health,
-                              totalSavings: _savingsData.totalSavings,
+                        const SizedBox(height: 16),
+                        // Motivational Message
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                _getHealthColor(health).withOpacity(0.2),
+                                _getHealthColor(health).withOpacity(0.1),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _getHealthColor(health).withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _getHealthColor(health).withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.spa,
+                                  color: _getHealthColor(health),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tree Health: ${_getTreeHealthText(health)}',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: _getHealthColor(health),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _getMotivationalMessage(health),
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${(health * 100).toInt()}%',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: _getHealthColor(health),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Tree with tap instruction
+                        SizedBox(
+                          height: 460,
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: MoneyTree(
+                                  health: health,
+                                  totalSavings: _savingsData.totalSavings,
+                                  onTap: _onTreeTapped,
+                                ),
+                              ),
+                              // Animated tap instruction
+                              if (_showTreeTip)
+                                Positioned(
+                                  bottom: 20,
+                                  left: 0,
+                                  right: 0,
+                                  child: AnimatedBuilder(
+                                    animation: _tipAnimation,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset: Offset(0, _tipAnimation.value),
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black87,
+                                              borderRadius: BorderRadius.circular(20),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.touch_app,
+                                                  color: Colors.white,
+                                                  size: 18,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Tap or Shake the tree! 🌳',
+                                                  style: theme.textTheme.bodySmall?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         // Savings Info
@@ -310,15 +514,21 @@ class _HomeScreenState extends State<HomeScreen> {
     VoidCallback onPressed,
   ) {
     return ElevatedButton.icon(
-      onPressed: onPressed,
+      onPressed: () {
+        HapticFeedback.lightImpact();
+        onPressed();
+      },
       icon: Icon(icon),
       label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: color.withOpacity(0.1),
         foregroundColor: color,
         padding: const EdgeInsets.symmetric(vertical: 16),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: color.withOpacity(0.3), width: 1),
         ),
       ),
     );
