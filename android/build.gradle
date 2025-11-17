@@ -1,13 +1,13 @@
 buildscript {
-    ext.kotlin_version = '1.9.22'
+    ext.kotlin_version = '2.1.0'
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        // Using Android Gradle Plugin 8.1.4 - compatible with Android Studio Hedgehog+
-        classpath 'com.android.tools.build:gradle:8.1.4'
+        // Using Android Gradle Plugin 8.6.1 - Latest stable, Flutter recommended
+        classpath 'com.android.tools.build:gradle:8.6.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
