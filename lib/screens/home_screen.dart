@@ -15,42 +15,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   late SavingsData _savingsData;
   List<Transaction> _transactions = [];
-  bool _showTreeTip = true;
-  late AnimationController _tipController;
-  late Animation<double> _tipAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadData();
     _updateStreak();
-
-    _tipController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _tipAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
-      CurvedAnimation(parent: _tipController, curve: Curves.easeInOut),
-    );
-
-    // Hide tip after 5 seconds
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() {
-          _showTreeTip = false;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tipController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -68,17 +41,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   String _getMotivationalMessage(double health) {
     if (health >= 0.9) {
-      return '🌟 Amazing! Your tree is thriving!';
+      return 'Outstanding progress on your savings goals';
     } else if (health >= 0.7) {
-      return '🌳 Great job! Keep growing!';
+      return 'Your finances are in great shape';
     } else if (health >= 0.5) {
-      return '🌱 Good progress! Almost there!';
+      return 'Steady progress towards your targets';
     } else if (health >= 0.3) {
-      return '💪 Stay strong! Every bit counts!';
+      return 'Building momentum with each deposit';
     } else if (health > 0) {
-      return '🌿 Small steps lead to big growth!';
+      return 'Every contribution brings you closer';
     } else {
-      return '🌱 Plant your first seed by saving money!';
+      return 'Start your financial growth journey today';
     }
   }
 
@@ -112,10 +85,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     HapticFeedback.mediumImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('✨ You tapped the tree! Keep saving to see it grow! 🌳'),
-        backgroundColor: Colors.green,
+        content: const Text('Continue saving to watch your financial growth'),
+        backgroundColor: const Color(0xFF66BB6A),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -261,71 +234,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Tree with tap instruction
+                        // Tree visualization
                         SizedBox(
                           height: 460,
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: MoneyTree(
-                                  health: health,
-                                  totalSavings: _savingsData.totalSavings,
-                                  onTap: _onTreeTapped,
-                                ),
-                              ),
-                              // Animated tap instruction
-                              if (_showTreeTip)
-                                Positioned(
-                                  bottom: 20,
-                                  left: 0,
-                                  right: 0,
-                                  child: AnimatedBuilder(
-                                    animation: _tipAnimation,
-                                    builder: (context, child) {
-                                      return Transform.translate(
-                                        offset: Offset(0, _tipAnimation.value),
-                                        child: Center(
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black87,
-                                              borderRadius: BorderRadius.circular(20),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withOpacity(0.3),
-                                                  blurRadius: 10,
-                                                  spreadRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(
-                                                  Icons.touch_app,
-                                                  color: Colors.white,
-                                                  size: 18,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Tap or Shake the tree! 🌳',
-                                                  style: theme.textTheme.bodySmall?.copyWith(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
+                          child: Center(
+                            child: MoneyTree(
+                              health: health,
+                              totalSavings: _savingsData.totalSavings,
+                              onTap: _onTreeTapped,
+                            ),
                           ),
                         ),
                         // Savings Info
