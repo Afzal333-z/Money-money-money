@@ -475,16 +475,39 @@ class _StatsScreenState extends State<StatsScreen> {
 
   void _showBudgetDialog(BuildContext context) {
     final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Set Monthly Budget'),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Budget Amount',
-            prefixText: '\$ ',
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Budget Amount',
+              prefixText: '\$ ',
+              hintText: 'Enter your monthly budget',
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a budget amount';
+              }
+              final budget = double.tryParse(value);
+              if (budget == null) {
+                return 'Please enter a valid number';
+              }
+              if (budget <= 0) {
+                return 'Budget must be greater than 0';
+              }
+              if (budget > 1000000) {
+                return 'Budget seems too high';
+              }
+              return null;
+            },
+            autofocus: true,
           ),
         ),
         actions: [
@@ -494,12 +517,19 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              final budget = double.tryParse(controller.text);
-              if (budget != null && budget > 0) {
+              if (formKey.currentState?.validate() ?? false) {
+                final budget = double.parse(controller.text);
                 final updatedData = _savingsData.copyWith(monthlyBudget: budget);
                 StorageService.saveSavingsData(updatedData);
                 Navigator.pop(context);
                 _loadData();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Budget set to \$${budget.toStringAsFixed(2)}'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               }
             },
             child: const Text('Save'),
